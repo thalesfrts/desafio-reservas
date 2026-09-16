@@ -1,0 +1,16 @@
+<% provide(:title, "Cadastrar Novo Bloco | Portal Condominial") %>
+
+<div class="max-w-xl mx-auto mt-10">
+  <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+    <div class="mb-8 border-b pb-4">
+      <h1 class="text-3xl font-extrabold text-gray-900">Cadastrar Novo Bloco</h1>
+      <p class="text-gray-500 mt-2 text-sm">Insira as especificações estruturais do bloco.</p>
+    </div>
+
+    <%= render "form", block: @block %>
+  </div>
+
+  <div class="mt-8 text-center mb-10">
+    <%= link_to "← Voltar para Gestão de Blocos", blocks_path, class: "text-slate-500 hover:text-violet-700 font-semibold transition-colors" %>
+  </div>
+</div>

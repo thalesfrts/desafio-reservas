@@ -1,0 +1,26 @@
+<div id="<%= dom_id ticket %>" class="w-full sm:w-auto my-5 space-y-5">
+  <div>
+    <strong class="block font-medium mb-1">Unidade:</strong>
+    <%= ticket.unit_id %>
+  </div>
+  <div>
+    <strong class="block font-medium mb-1">Usuário:</strong>
+    <%= ticket.user_id %>
+  </div>
+  <div>
+    <strong class="block font-medium mb-1">Tipo de chamado:</strong>
+    <%= ticket.ticket_type_id %>
+  </div>
+  <div>
+    <strong class="block font-medium mb-1">Status do chamado:</strong>
+    <%= ticket.ticket_status_id %>
+  </div>
+  <div>
+    <strong class="block font-medium mb-1">Descrição:</strong>
+    <%= ticket.description %>
+  </div>
+  <div>
+    <strong class="block font-medium mb-1">Resolvido em:</strong>
+    <%= ticket.resolved_at %>
+  </div>
+</div>

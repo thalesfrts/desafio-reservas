@@ -1,0 +1,305 @@
+<% provide(:title, "Chamados | Portal Condominial") %>
+<% provide(:page_heading, "Chamados") %>
+
+<% resident_view = current_user.resident? %>
+<% sla_visible = !resident_view %>
+<% show_apartment_column = !resident_view || current_user.units.many? %>
+<% filter_keys = if resident_view
+  %i[period ticket_status_id unit_id]
+else
+  %i[block_id created_from created_to ticket_status_id ticket_type_id unit_id sla_state]
+end %>
+<% filters_active = filter_keys.any? { |k| params[k].present? } %>
+
+<div class="w-full">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="font-display text-4xl font-extrabold tracking-tight text-slate-900">Chamados</h1>
+    </div>
+
+    <%= link_to "Novo Chamado", new_ticket_path, class: "btn-brand inline-flex items-center justify-center px-5 py-2.5 text-sm" %>
+  </div>
+
+  <div class="panel-surface overflow-hidden rounded-2xl">
+    <%= form_with url: tickets_path, method: :get, local: true, data: { turbo_frame: "tickets_results" }, class: "border-b border-violet-100/70 p-4" do %>
+      <%= hidden_field_tag :sort_by, @sort_by %>
+      <%= hidden_field_tag :sort_dir, @sort_dir %>
+      <%= hidden_field_tag :per_page, @per_page %>
+
+      <details class="group" <%= "open" if filters_active %>>
+        <summary class="list-none cursor-pointer select-none">
+          <div class="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 font-bold text-violet-900">
+            Filtros
+          </div>
+        </summary>
+
+        <div class="mt-4 grid items-end gap-4 md:grid-cols-4">
+          <% if resident_view %>
+            <div>
+              <%= label_tag :ticket_status_id, "Status", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= select_tag :ticket_status_id,
+                options_from_collection_for_select(TicketStatus.order(:name), :id, :name, params[:ticket_status_id]),
+                include_blank: "Todos",
+                class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+
+            <div>
+              <%= label_tag :period, "Período", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= select_tag :period,
+                options_for_select([
+                  ["Todos", ""],
+                  ["Últimos 7 dias", "7"],
+                  ["Últimos 30 dias", "30"],
+                  ["Últimos 90 dias", "90"]
+                ], params[:period]),
+                class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+
+            <% if current_user.units.many? %>
+              <div>
+                <%= label_tag :unit_id, "Unidade", class: "mb-1 block text-sm font-bold text-slate-800" %>
+                <%= select_tag :unit_id,
+                  options_from_collection_for_select(current_user.units.includes(:block), :id, :identifier, params[:unit_id]),
+                  include_blank: "Todas",
+                  class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+              </div>
+            <% end %>
+          <% else %>
+            <div>
+              <%= label_tag :block_id, "Bloco", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= select_tag :block_id,
+                options_from_collection_for_select(Block.order(:identification), :id, :identification, params[:block_id]),
+                include_blank: "Todos",
+                class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+
+            <div>
+              <%= label_tag :created_from, "De", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= date_field_tag :created_from, params[:created_from], class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+
+            <div>
+              <%= label_tag :created_to, "Até", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= date_field_tag :created_to, params[:created_to], class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+
+            <div>
+              <%= label_tag :ticket_status_id, "Status", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= select_tag :ticket_status_id,
+                options_from_collection_for_select(TicketStatus.order(:name), :id, :name, params[:ticket_status_id]),
+                include_blank: "Todos",
+                class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+
+            <div>
+              <%= label_tag :ticket_type_id, "Tipo", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= select_tag :ticket_type_id,
+                options_from_collection_for_select(TicketType.order(:title), :id, :title, params[:ticket_type_id]),
+                include_blank: "Todos",
+                class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+
+            <div>
+              <%= label_tag :sla_state, "SLA", class: "mb-1 block text-sm font-bold text-slate-800" %>
+              <%= select_tag :sla_state,
+                options_for_select([
+                  ["Todos", ""],
+                  ["No prazo", "on_time"],
+                  ["Em risco", "at_risk"],
+                  ["Vencido", "breached"]
+                ], params[:sla_state]),
+                class: "w-full rounded-lg border border-violet-200 bg-white p-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            </div>
+          <% end %>
+
+          <div class="flex items-end gap-2">
+            <%= submit_tag "Filtrar", class: "btn-brand px-4 py-2 text-sm" %>
+            <%= link_to "Limpar", tickets_path, data: { turbo_frame: "tickets_results" }, class: "btn-brand-soft px-4 py-2 text-sm" %>
+          </div>
+        </div>
+      </details>
+    <% end %>
+
+    <%= turbo_frame_tag "tickets_results" do %>
+      <% if @date_filter_error.present? %>
+        <div class="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p class="text-sm font-semibold text-amber-800"><%= @date_filter_error %></p>
+        </div>
+      <% end %>
+
+      <% if @tickets.empty? %>
+        <div class="py-12 text-center">
+          <p class="text-sm font-medium text-slate-500">Nenhum chamado encontrado.</p>
+        </div>
+      <% else %>
+        <div class="md:hidden divide-y divide-violet-100/80 bg-white/95">
+          <% @tickets.each do |ticket| %>
+            <article class="space-y-2 px-4 py-3">
+              <div class="flex items-center justify-between">
+                <p class="font-mono text-sm text-slate-500"># <%= ticket.id.to_s.rjust(4, '0') %></p>
+                <span class="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold leading-5 text-violet-800">
+                  <%= ticket.ticket_status.name %>
+                </span>
+              </div>
+
+              <p class="text-sm font-bold text-slate-900"><%= ticket.ticket_type.title %></p>
+
+              <% if show_apartment_column %>
+                <p class="text-sm text-slate-700"><%= ticket.unit.block.identification %> - Apartamento <%= ticket.unit.identifier %></p>
+              <% end %>
+
+              <div class="text-xs text-slate-600">
+                <p><span class="font-semibold text-slate-800">Aberto:</span> <%= l(ticket.created_at, format: "%d/%m/%Y %H:%M") %></p>
+                <p><span class="font-semibold text-slate-800">Atualizado:</span> <%= l(ticket.updated_at, format: "%d/%m/%Y %H:%M") %></p>
+              </div>
+
+              <% if sla_visible %>
+                <div>
+                  <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold leading-5 <%= ticket_sla_badge_classes(ticket) %>">
+                    <%= ticket_sla_status_label(ticket) %>
+                  </span>
+                  <p class="mt-1 text-xs text-slate-500">
+                    <%= ticket.sla_due_at.present? ? "Vence em #{l(ticket.sla_due_at, format: "%d/%m/%Y %H:%M")}" : "Sem prazo" %>
+                  </p>
+                </div>
+              <% end %>
+
+              <%= link_to "Ver Detalhes", ticket, data: { turbo_frame: "_top" }, class: "inline-flex text-sm font-semibold text-violet-700 hover:text-violet-900" %>
+            </article>
+          <% end %>
+        </div>
+
+        <div class="hidden md:block overflow-x-auto">
+          <table class="min-w-full divide-y divide-violet-100/80">
+            <thead class="bg-violet-50/60">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">
+                  <%= link_to "ID#{tickets_sort_indicator(@sort_by, @sort_dir, 'id')}",
+                    tickets_path(tickets_query_with(page: nil, sort_by: 'id', sort_dir: tickets_sort_next_direction(@sort_by, @sort_dir, 'id'))),
+                    data: { turbo_frame: "tickets_results" },
+                    class: "transition-colors hover:text-violet-900" %>
+                </th>
+                <% if show_apartment_column %>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">
+                    <%= link_to "Apartamento#{tickets_sort_indicator(@sort_by, @sort_dir, 'apartment')}",
+                      tickets_path(tickets_query_with(page: nil, sort_by: 'apartment', sort_dir: tickets_sort_next_direction(@sort_by, @sort_dir, 'apartment'))),
+                      data: { turbo_frame: "tickets_results" },
+                      class: "transition-colors hover:text-violet-900" %>
+                  </th>
+                <% end %>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">
+                  <%= link_to "Problema#{tickets_sort_indicator(@sort_by, @sort_dir, 'ticket_type')}",
+                    tickets_path(tickets_query_with(page: nil, sort_by: 'ticket_type', sort_dir: tickets_sort_next_direction(@sort_by, @sort_dir, 'ticket_type'))),
+                    data: { turbo_frame: "tickets_results" },
+                    class: "transition-colors hover:text-violet-900" %>
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">
+                  <%= link_to "Datas#{tickets_sort_indicator(@sort_by, @sort_dir, 'updated_at')}",
+                    tickets_path(tickets_query_with(page: nil, sort_by: 'updated_at', sort_dir: tickets_sort_next_direction(@sort_by, @sort_dir, 'updated_at'))),
+                    data: { turbo_frame: "tickets_results" },
+                    class: "transition-colors hover:text-violet-900" %>
+                </th>
+                <% if sla_visible %>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">
+                    <%= link_to "SLA#{tickets_sort_indicator(@sort_by, @sort_dir, 'sla_due_at')}",
+                      tickets_path(tickets_query_with(page: nil, sort_by: 'sla_due_at', sort_dir: tickets_sort_next_direction(@sort_by, @sort_dir, 'sla_due_at'))),
+                      data: { turbo_frame: "tickets_results" },
+                      class: "transition-colors hover:text-violet-900" %>
+                  </th>
+                <% end %>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">
+                  <%= link_to "Status#{tickets_sort_indicator(@sort_by, @sort_dir, 'ticket_status')}",
+                    tickets_path(tickets_query_with(page: nil, sort_by: 'ticket_status', sort_dir: tickets_sort_next_direction(@sort_by, @sort_dir, 'ticket_status'))),
+                    data: { turbo_frame: "tickets_results" },
+                    class: "transition-colors hover:text-violet-900" %>
+                </th>
+                <th scope="col" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-violet-700">Ações</th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-violet-100/80 bg-white/95">
+              <% @tickets.each do |ticket| %>
+                <tr class="transition-colors hover:bg-violet-50/60">
+                  <td class="whitespace-nowrap px-6 py-3 font-mono text-sm text-slate-500"># <%= ticket.id.to_s.rjust(4, '0') %></td>
+                  <% if show_apartment_column %>
+                    <td class="whitespace-nowrap px-6 py-3 text-sm font-bold text-slate-900"><%= ticket.unit.block.identification %> - Apartamento <%= ticket.unit.identifier %></td>
+                  <% end %>
+                  <td class="whitespace-nowrap px-6 py-3 text-sm text-slate-600"><%= ticket.ticket_type.title %></td>
+                  <td class="px-6 py-3 text-xs text-slate-600">
+                    <p><span class="font-semibold text-slate-800">Aberto:</span> <%= l(ticket.created_at, format: "%d/%m/%Y %H:%M") %></p>
+                    <p><span class="font-semibold text-slate-800">Atualizado:</span> <%= l(ticket.updated_at, format: "%d/%m/%Y %H:%M") %></p>
+                  </td>
+                  <% if sla_visible %>
+                    <td class="px-6 py-3">
+                      <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold leading-5 <%= ticket_sla_badge_classes(ticket) %>"><%= ticket_sla_status_label(ticket) %></span>
+                      <p class="mt-1 text-xs text-slate-500"><%= ticket.sla_due_at.present? ? "Vence em #{l(ticket.sla_due_at, format: "%d/%m/%Y %H:%M")}" : "Sem prazo" %></p>
+                    </td>
+                  <% end %>
+                  <td class="whitespace-nowrap px-6 py-3">
+                    <span class="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold leading-5 text-violet-800"><%= ticket.ticket_status.name %></span>
+                  </td>
+                  <td class="whitespace-nowrap px-6 py-3 text-right text-sm font-medium">
+                    <%= link_to "Ver Detalhes", ticket, data: { turbo_frame: "_top" }, class: "font-semibold text-violet-700 hover:text-violet-900" %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <% page_start = ((@page - 1) * @per_page) + 1 %>
+        <% page_end = [page_start + @tickets.size - 1, @total_tickets].min %>
+        <% base_query = request.query_parameters.except(:page) %>
+        <% per_page_query = request.query_parameters.except(:per_page, :page) %>
+        <% window_start = [@page - 2, 1].max %>
+        <% window_end = [window_start + 4, @total_pages].min %>
+        <% window_start = [window_end - 4, 1].max %>
+
+        <div class="flex flex-col gap-3 border-t border-violet-100/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-wrap items-center gap-3">
+            <p class="text-sm text-slate-600">
+              Mostrando <span class="font-semibold text-slate-800"><%= page_start %>-<%= page_end %></span> de
+              <span class="font-semibold text-slate-800"><%= @total_tickets %></span> chamados.
+            </p>
+
+            <%= form_with url: tickets_path, method: :get, local: true, data: { turbo_frame: "tickets_results" }, class: "flex items-center gap-2" do %>
+              <% per_page_query.each do |key, value| %>
+                <%= hidden_field_tag key, value %>
+              <% end %>
+              <label for="per_page_footer" class="text-xs font-semibold uppercase tracking-wide text-slate-500">Itens/página</label>
+              <%= select_tag :per_page,
+                options_for_select([["5", 5], ["10", 10], ["20", 20]], @per_page),
+                id: "per_page_footer",
+                onchange: "this.form.requestSubmit()",
+                class: "rounded-lg border border-violet-200 bg-white px-2 py-1 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" %>
+            <% end %>
+          </div>
+
+          <% if @total_pages > 1 %>
+            <nav class="flex flex-wrap items-center gap-2" aria-label="Paginação de chamados">
+              <% if @page > 1 %>
+                <%= link_to "Anterior", tickets_path(base_query.merge(page: @page - 1)), data: { turbo_frame: "tickets_results" }, class: "rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm font-semibold text-violet-700 hover:bg-violet-50" %>
+              <% else %>
+                <span class="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-400">Anterior</span>
+              <% end %>
+
+              <% (window_start..window_end).each do |page_number| %>
+                <% if page_number == @page %>
+                  <span class="rounded-lg bg-violet-700 px-3 py-1.5 text-sm font-semibold text-white"><%= page_number %></span>
+                <% else %>
+                  <%= link_to page_number, tickets_path(base_query.merge(page: page_number)), data: { turbo_frame: "tickets_results" }, class: "rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm font-semibold text-violet-700 hover:bg-violet-50" %>
+                <% end %>
+              <% end %>
+
+              <% if @page < @total_pages %>
+                <%= link_to "Próxima", tickets_path(base_query.merge(page: @page + 1)), data: { turbo_frame: "tickets_results" }, class: "rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm font-semibold text-violet-700 hover:bg-violet-50" %>
+              <% else %>
+                <span class="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-400">Próxima</span>
+              <% end %>
+            </nav>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

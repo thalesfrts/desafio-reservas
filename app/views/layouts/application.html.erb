@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for?(:title) ? yield(:title) : "Portal Condominial" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.default.min.css" rel="stylesheet">
+  </head>
+
+  <body class="min-h-screen app-background text-slate-900">
+    <% if user_signed_in? %>
+      <% nav_items = navigation_items_for(current_user) %>
+
+      <button type="button" data-desktop-nav-toggle class="desktop-nav-edge-toggle fixed top-6 z-50 hidden h-10 w-10 items-center justify-center rounded-full lg:inline-flex" aria-controls="desktop-nav" aria-expanded="true" aria-label="Recolher menu lateral" title="Recolher menu lateral">
+        <svg xmlns="http://www.w3.org/2000/svg" class="desktop-nav-icon-collapse h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="desktop-nav-icon-expand hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      <div class="min-h-screen lg:flex lg:items-start">
+        <div id="mobile-nav-overlay" class="fixed inset-0 z-40 hidden bg-slate-950/50 lg:hidden"></div>
+
+        <aside id="mobile-nav" class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-gradient-to-b from-[#48377d] to-[#2a1d50] p-6 text-white shadow-2xl transition-transform duration-300 ease-out lg:hidden">
+          <div class="mb-8">
+            <%= link_to "Portal Condominial", root_path_for(current_user), class: "font-display text-2xl font-extrabold tracking-tight hover:text-violet-100 transition-colors duration-200" %>
+            <p class="mt-1 text-sm text-violet-200">Navegação rápida</p>
+          </div>
+
+          <nav class="flex-1 overflow-y-auto">
+            <%= render "layouts/navigation_links", items: nav_items, mobile: true %>
+          </nav>
+
+          <button type="button" data-nav-close class="mt-6 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
+            Fechar menu
+          </button>
+        </aside>
+
+        <aside id="desktop-nav" class="hidden w-72 flex-col bg-gradient-to-b from-[#48377d] to-[#2a1d50] p-6 text-white shadow-2xl transition-all duration-300 lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start">
+          <div class="mb-10 desktop-nav-brand-full">
+            <%= link_to "Portal Condominial", root_path_for(current_user), class: "font-display text-2xl font-extrabold tracking-tight hover:text-violet-100 transition-colors duration-200" %>
+            <p class="mt-1 text-sm text-violet-200">Painel de operações</p>
+          </div>
+
+          <div class="desktop-nav-brand-collapsed mb-8 hidden items-center justify-center">
+            <%= link_to root_path_for(current_user), class: "inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white hover:bg-white/30", title: "Portal Condominial" do %>
+              <%= navigation_icon(:building, classes: "h-5 w-5") %>
+            <% end %>
+          </div>
+
+          <nav class="flex-1 overflow-y-auto">
+            <%= render "layouts/navigation_links", items: nav_items, mobile: false %>
+          </nav>
+
+          <div class="desktop-nav-session-full mt-6 rounded-2xl bg-white/10 p-4">
+            <p class="text-xs uppercase tracking-[0.18em] text-violet-200">Sessão ativa</p>
+            <p class="mt-2 font-semibold text-white"><%= current_user.name %></p>
+            <p class="text-sm text-violet-200"><%= current_user.email %></p>
+          </div>
+
+          <div class="desktop-nav-session-collapsed mt-6 hidden items-center justify-center">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white" title="<%= current_user.name %>">
+              <%= navigation_icon(:user, classes: "h-5 w-5") %>
+            </span>
+          </div>
+        </aside>
+
+        <div class="flex min-h-screen flex-1 flex-col">
+          <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur">
+            <div class="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+              <div class="flex items-center gap-3">
+                <button type="button" data-nav-open class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 lg:hidden" aria-label="Abrir menu">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+
+                <div>
+                  <p class="text-xs uppercase tracking-[0.18em] text-slate-500"><%= current_user.administrator? ? "Área administrativa" : "Portal de chamados" %></p>
+                  <p class="text-sm font-medium text-slate-700">Navegação e operações</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <%= link_to notifications_toggle_path, class: "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 text-violet-700 transition-colors hover:bg-violet-100", title: notifications_toggle_title do %>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.17V11a6 6 0 10-12 0v3.17c0 .53-.21 1.04-.59 1.43L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+
+                  <% if unread_notifications_count.positive? %>
+                    <span class="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[11px] font-bold text-white">
+                      <%= [unread_notifications_count, 99].min %>
+                    </span>
+                  <% end %>
+                <% end %>
+                <%= button_to "Sair", destroy_user_session_path, method: :delete, class: "rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-red-700 cursor-pointer" %>
+              </div>
+            </div>
+          </header>
+
+          <main class="flex-1 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+            <div id="app-main-content" class="page-transition mx-auto w-full max-w-6xl space-y-4">
+              <% if notice %>
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
+                  <p class="text-sm font-semibold text-emerald-700"><%= notice %></p>
+                </div>
+              <% end %>
+
+              <% if alert %>
+                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 shadow-sm">
+                  <p class="text-sm font-semibold text-rose-700"><%= alert %></p>
+                </div>
+              <% end %>
+
+              <%= yield %>
+            </div>
+          </main>
+        </div>
+      </div>
+    <% else %>
+      <header class="border-b border-slate-200/80 bg-white/90 backdrop-blur">
+        <div class="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <%= link_to "Portal Condominial", unauthenticated_root_path, class: "font-display text-2xl font-extrabold tracking-tight text-slate-900" %>
+
+          <% unless devise_controller? %>
+            <%= link_to "Entrar", new_user_session_path, class: "rounded-lg bg-[#5f46a6] px-4 py-2 text-sm font-semibold text-white hover:bg-[#523b94]" %>
+          <% end %>
+        </div>
+      </header>
+
+      <main class="mx-auto w-full max-w-6xl px-4 pb-10 pt-8 sm:px-6 lg:px-8">
+        <div id="app-main-content" class="page-transition space-y-4">
+          <% if notice %>
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
+              <p class="text-sm font-semibold text-emerald-700"><%= notice %></p>
+            </div>
+          <% end %>
+
+          <% if alert %>
+            <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 shadow-sm">
+              <p class="text-sm font-semibold text-rose-700"><%= alert %></p>
+            </div>
+          <% end %>
+
+          <%= yield %>
+        </div>
+      </main>
+    <% end %>
+  </body>
+</html>

@@ -1,0 +1,207 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS (and SCSS, if configured) file within this directory, lib/assets/stylesheets, or any plugin's
+ * vendor/assets/stylesheets directory can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the bottom of the
+ * compiled file so the styles you add here take precedence over styles defined in any other CSS
+ * files in this directory. Styles in this file should be added after the last require_* statement.
+ * It is generally better to create a new file per style scope.
+ *
+ *= require_tree .
+ *= require_self
+ */
+
+:root {
+	--app-text: #0f172a;
+	--app-surface: #f7f9fc;
+	--brand-500: #5f46a6;
+	--brand-600: #48377d;
+	--brand-700: #372660;
+	--desktop-nav-expanded-width: 18rem;
+	--desktop-nav-collapsed-width: 4.75rem;
+}
+
+body {
+	color: var(--app-text);
+	font-family: "Source Sans 3", "Segoe UI", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+	font-family: "Sora", "Segoe UI", sans-serif;
+}
+
+.app-background {
+	background:
+		radial-gradient(circle at -10% -20%, rgba(72, 55, 125, 0.24) 0%, rgba(72, 55, 125, 0) 48%),
+		radial-gradient(circle at 115% 0%, rgba(123, 92, 196, 0.18) 0%, rgba(123, 92, 196, 0) 40%),
+		var(--app-surface);
+}
+
+.page-transition {
+	opacity: 1;
+	transition: opacity 220ms ease;
+}
+
+.page-enter {
+	animation: page-enter 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.is-navigating .page-transition {
+	opacity: 0.52;
+	transform: translateY(8px);
+}
+
+@keyframes page-enter {
+	from {
+		opacity: 0.35;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.btn-brand {
+	border-radius: 0.75rem;
+	background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
+	color: #fff;
+	font-weight: 700;
+	box-shadow: 0 8px 20px rgba(72, 55, 125, 0.26);
+	transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.btn-brand:hover {
+	filter: brightness(1.03);
+	box-shadow: 0 12px 24px rgba(72, 55, 125, 0.32);
+	transform: translateY(-1px);
+}
+
+.btn-brand-soft {
+	border-radius: 0.75rem;
+	background: #efeafd;
+	color: var(--brand-700);
+	font-weight: 700;
+	transition: background-color 180ms ease;
+}
+
+.btn-brand-soft:hover {
+	background: #e4dcfb;
+}
+
+.panel-surface {
+	border: 1px solid #e4ddf8;
+	background: rgba(255, 255, 255, 0.9);
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+	backdrop-filter: blur(2px);
+}
+
+details > summary {
+	list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+	display: none;
+}
+
+@media (min-width: 1024px) {
+	#desktop-nav {
+		width: var(--desktop-nav-expanded-width);
+		min-width: var(--desktop-nav-expanded-width);
+		overflow-x: hidden;
+	}
+
+	#desktop-nav nav {
+		overflow-x: hidden;
+	}
+
+	.desktop-nav-edge-toggle {
+		left: calc(var(--desktop-nav-expanded-width) - 0.35rem);
+		border: 1px solid #d7cff2;
+		background: #ffffff;
+		color: var(--brand-600);
+		box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+		transition: left 220ms ease, transform 180ms ease, box-shadow 180ms ease;
+	}
+
+	.desktop-nav-edge-toggle:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+	}
+
+	body.desktop-nav-collapsed .desktop-nav-edge-toggle .desktop-nav-icon-expand {
+		display: block;
+	}
+
+	body.desktop-nav-collapsed .desktop-nav-edge-toggle .desktop-nav-icon-collapse {
+		display: none;
+	}
+
+	body.desktop-nav-collapsed .desktop-nav-edge-toggle {
+		left: calc(var(--desktop-nav-collapsed-width) - 0.35rem);
+	}
+
+	body.desktop-nav-collapsed #desktop-nav {
+		width: var(--desktop-nav-collapsed-width) !important;
+		min-width: var(--desktop-nav-collapsed-width) !important;
+		padding: 1rem 0.75rem !important;
+		overflow: hidden;
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-brand-full,
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-session-full,
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-full-item {
+		display: none;
+	}
+
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-brand-collapsed,
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-session-collapsed,
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-collapsed-item {
+		display: flex;
+	}
+
+	body.desktop-nav-collapsed #desktop-nav nav ul {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		overflow-x: hidden;
+	}
+
+	body.desktop-nav-collapsed #desktop-nav li {
+		width: 100%;
+	}
+
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-link-shell,
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-collapsed-item {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.75rem;
+		min-height: 2.75rem;
+		padding: 0.45rem;
+		margin: 0 auto;
+		border-radius: 0.85rem;
+	}
+
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-link-shell .inline-flex,
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-collapsed-item .inline-flex {
+		height: 1.9rem;
+		width: 1.9rem;
+	}
+
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-label,
+	body.desktop-nav-collapsed #desktop-nav .desktop-nav-chevron {
+		display: none;
+	}
+}

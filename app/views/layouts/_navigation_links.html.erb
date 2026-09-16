@@ -1,0 +1,51 @@
+<ul class="space-y-1">
+  <% items.each do |item| %>
+    <% active = navigation_item_active?(item) %>
+    <% desktop_group_target = item[:children]&.first %>
+    <li>
+      <% if item[:children].present? %>
+        <% if !mobile && desktop_group_target.present? %>
+          <%= link_to desktop_group_target[:path],
+            class: "#{navigation_link_classes(active, mobile: false)} desktop-nav-collapsed-item hidden justify-center px-2",
+            title: item[:label] do %>
+            <span class="<%= navigation_badge_classes(active) %>"><%= navigation_icon(item[:icon], classes: "h-4 w-4") %></span>
+          <% end %>
+        <% end %>
+
+        <% expanded = navigation_group_open?(item) %>
+        <details class="group desktop-nav-full-item" <%= "open" if expanded %>>
+          <summary class="list-none cursor-pointer">
+            <div class="<%= navigation_group_button_classes(active, mobile: mobile) %> desktop-nav-link-shell">
+              <div class="flex items-center gap-3">
+                <span class="<%= navigation_badge_classes(active) %>"><%= navigation_icon(item[:icon], classes: "h-4 w-4") %></span>
+                <span class="desktop-nav-label"><%= item[:label] %></span>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="desktop-nav-chevron h-4 w-4 text-current transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+
+          <ul class="mt-1 space-y-1 pl-11 pr-1 pb-1">
+            <% item[:children].each do |child| %>
+              <% child_active = navigation_item_active?(child) %>
+              <li>
+                  <%= link_to child[:path], class: navigation_sub_link_classes(child_active) do %>
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded text-current/80">
+                      <%= navigation_icon(child[:icon], classes: "h-3.5 w-3.5") %>
+                    </span>
+                    <span><%= child[:label] %></span>
+                  <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </details>
+      <% else %>
+        <%= link_to item[:path], class: "#{navigation_link_classes(active, mobile: mobile)} desktop-nav-link-shell", title: (mobile ? nil : item[:label]) do %>
+          <span class="<%= navigation_badge_classes(active) %>"><%= navigation_icon(item[:icon], classes: "h-4 w-4") %></span>
+          <span class="desktop-nav-label"><%= item[:label] %></span>
+        <% end %>
+      <% end %>
+    </li>
+  <% end %>
+</ul>

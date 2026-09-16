@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: Aberto
+  is_default: true
+  is_final: false
+
+two:
+  name: Em andamento
+  is_default: false
+  is_final: false

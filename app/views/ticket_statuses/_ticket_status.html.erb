@@ -1,0 +1,18 @@
+<div id="<%= dom_id ticket_status %>" class="w-full sm:w-auto">
+  <div class="grid gap-3 sm:grid-cols-2">
+    <div>
+      <strong class="mb-1 block text-xs uppercase tracking-wide text-violet-700">Nome</strong>
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-sm font-semibold text-slate-900"><%= ticket_status.name %></p>
+        <% if ticket_status.is_default? %>
+          <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">Padrao</span>
+        <% end %>
+      </div>
+    </div>
+
+    <div>
+      <strong class="mb-1 block text-xs uppercase tracking-wide text-violet-700">Status de conclusao</strong>
+      <p class="text-sm text-slate-700"><%= ticket_status.is_final? ? "Sim" : "Nao" %></p>
+    </div>
+  </div>
+</div>

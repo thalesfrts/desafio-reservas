@@ -1,0 +1,57 @@
+<% provide(:title, "Gestão de Blocos | Portal Condominial") %>
+<% provide(:page_heading, "Blocos e Unidades") %>
+
+<div class="w-full">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="font-display text-4xl font-extrabold tracking-tight text-slate-900">Gestao de Blocos</h1>
+      <p class="mt-1 text-sm text-slate-500">Configure blocos, andares e apartamentos do condominio.</p>
+    </div>
+    <%= link_to "Novo Bloco", new_block_path, class: "btn-brand inline-flex items-center justify-center px-5 py-2.5 text-sm" %>
+  </div>
+
+  <div class="panel-surface overflow-hidden rounded-2xl">
+    <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-violet-100/80">
+      <thead class="bg-violet-50/60">
+        <tr>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-violet-700">ID</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-violet-700">Identificacao</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-violet-700">Andares</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-violet-700">Apts / Andar</th>
+          <th scope="col" class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-violet-700">Acoes</th>
+        </tr>
+      </thead>
+      
+      <tbody class="divide-y divide-violet-100/80 bg-white/95">
+        <% @blocks.each do |block| %>
+          <tr class="transition-colors hover:bg-violet-50/60">
+            <td class="whitespace-nowrap px-6 py-4 font-mono text-sm text-slate-500">
+              # <%= block.id.to_s.rjust(3, '0') %>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm font-bold text-slate-900">
+              <%= block.identification %>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+              <%= block.floors_count %>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+              <%= block.apartments_per_floor %>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium space-x-3">
+              <%= link_to "Editar", edit_block_path(block), class: "font-semibold text-violet-700 hover:text-violet-900" %>
+              <%= link_to "Excluir", block, data: { turbo_method: :delete, turbo_confirm: "Tem certeza que deseja excluir esta torre?" }, class: "font-semibold text-rose-600 hover:text-rose-800" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    </div>
+    
+    <% if @blocks.empty? %>
+      <div class="py-12 text-center">
+        <p class="text-sm font-medium text-slate-500">Nenhum bloco ou torre cadastrada ainda.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,12 @@
+<div id="<%= dom_id ticket_type %>" class="w-full sm:w-auto">
+  <div class="grid gap-3 sm:grid-cols-2">
+    <div>
+      <strong class="mb-1 block text-xs uppercase tracking-wide text-violet-700">Titulo</strong>
+      <p class="text-sm font-semibold text-slate-900"><%= ticket_type.title %></p>
+    </div>
+    <div>
+      <strong class="mb-1 block text-xs uppercase tracking-wide text-violet-700">Prazo (horas)</strong>
+      <p class="text-sm text-slate-700"><%= ticket_type.sla_hours %>h</p>
+    </div>
+  </div>
+</div>

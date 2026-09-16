@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  unit: one
+  user: one
+  ticket_type: one
+  ticket_status: one
+  description: MyText
+  resolved_at: 2026-04-10 03:16:46
+
+two:
+  unit: two
+  user: two
+  ticket_type: two
+  ticket_status: two
+  description: MyText
+  resolved_at: 2026-04-10 03:16:46

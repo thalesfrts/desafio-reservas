@@ -1,0 +1,5 @@
+<div class="flex flex-col space-y-3 mt-4">
+  <%- if controller_name != 'sessions' %>
+    <%= link_to "Já possui uma conta? Entrar", new_session_path(resource_name), class: "text-violet-700 hover:text-violet-900 transition-colors" %>
+  <% end %>
+</div>

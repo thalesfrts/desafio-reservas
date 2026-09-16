@@ -1,0 +1,9 @@
+<% provide(:title, "Editar Usuário | Portal Condominial") %>
+
+<div class="max-w-2xl mx-auto mt-10 bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+  <h1 class="text-3xl font-extrabold text-gray-900 mb-6">Editar Usuário</h1>
+  <%= render "form", user: @user %>
+  <div class="mt-6">
+    <%= link_to "← Voltar", admin_users_path, class: "text-gray-600 hover:text-gray-900 font-semibold" %>
+  </div>
+</div>

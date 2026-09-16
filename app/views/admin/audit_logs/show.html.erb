@@ -1,0 +1,104 @@
+<% provide(:title, "Detalhe da Auditoria | Portal Condominial") %>
+<% provide(:page_heading, "Detalhe da Auditoria") %>
+<% context_rows = audit_context_rows(@audit_log.context_data) %>
+<% change_rows = audit_change_rows(@audit_log.change_set) %>
+
+<div class="w-full space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="font-display text-3xl font-extrabold tracking-tight text-slate-900">Evento de Auditoria</h1>
+      <p class="mt-1 text-sm text-slate-500"><%= audit_action_label(@audit_log.action) %> em <%= l(@audit_log.created_at, format: "%d/%m/%Y %H:%M:%S") %></p>
+    </div>
+    <%= link_to "← Voltar para auditoria", admin_audit_logs_path, class: "text-sm font-semibold text-slate-600 hover:text-slate-900" %>
+  </div>
+
+  <div class="panel-surface rounded-2xl p-5">
+    <dl class="grid gap-4 text-sm text-slate-700 md:grid-cols-2">
+      <div>
+        <dt class="font-bold text-slate-900">Ação</dt>
+        <dd><%= audit_action_label(@audit_log.action) %></dd>
+      </div>
+      <div>
+        <dt class="font-bold text-slate-900">Usuário</dt>
+        <dd><%= audit_actor_label(@audit_log.actor) %> <%= @audit_log.actor&.email.present? ? "(#{@audit_log.actor.email})" : "" %></dd>
+      </div>
+      <div>
+        <dt class="font-bold text-slate-900">Recurso</dt>
+        <dd><%= audit_resource_label(@audit_log.auditable_type, @audit_log.auditable_id) %></dd>
+      </div>
+      <div>
+        <dt class="font-bold text-slate-900">IP da requisição / Request</dt>
+        <dd><%= @audit_log.ip_address.presence || "-" %> / <%= @audit_log.request_id.presence || "-" %></dd>
+        <p class="mt-1 text-xs text-slate-500">Quando houver proxy, a auditoria usa o primeiro IP informado em X-Forwarded-For; caso contrário, usa o IP recebido pelo Rails.</p>
+      </div>
+      <div class="md:col-span-2">
+        <dt class="font-bold text-slate-900">User Agent</dt>
+        <dd class="break-all"><%= @audit_log.user_agent.presence || "-" %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="grid gap-5 md:grid-cols-2">
+    <div class="panel-surface rounded-2xl p-5">
+      <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-violet-700">Contexto (Simplificado)</h2>
+
+      <% if context_rows.any? %>
+        <dl class="space-y-3 text-sm text-slate-700">
+          <% context_rows.each do |row| %>
+            <div class="grid gap-1 border-b border-violet-100/80 pb-2 last:border-b-0 last:pb-0 sm:grid-cols-2">
+              <dt class="font-semibold text-slate-900"><%= row[:field] %></dt>
+              <dd class="break-all text-slate-700"><%= row[:value] %></dd>
+            </div>
+          <% end %>
+        </dl>
+      <% else %>
+        <p class="text-sm text-slate-500">Sem contexto adicional para este evento.</p>
+      <% end %>
+    </div>
+
+    <div class="panel-surface rounded-2xl p-5">
+      <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-violet-700">Mudanças (Simplificado)</h2>
+
+      <% if change_rows.any? %>
+        <div class="overflow-x-auto rounded-lg border border-violet-100/80">
+          <table class="min-w-full divide-y divide-violet-100/80">
+            <thead class="bg-violet-50/60">
+              <tr>
+                <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-violet-700">Campo</th>
+                <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-violet-700">De</th>
+                <th class="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-violet-700">Para</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-violet-100/80 bg-white">
+              <% change_rows.each do |row| %>
+                <tr>
+                  <td class="px-3 py-2 text-sm font-semibold text-slate-900"><%= row[:field] %></td>
+                  <td class="px-3 py-2 text-sm text-slate-600"><%= row[:from] %></td>
+                  <td class="px-3 py-2 text-sm text-slate-600"><%= row[:to] %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="text-sm text-slate-500">Nenhuma mudança detalhada para este evento.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <details class="panel-surface rounded-2xl p-5">
+    <summary class="cursor-pointer select-none text-sm font-bold uppercase tracking-wide text-violet-700">Dados técnicos (JSON)</summary>
+
+    <div class="mt-4 grid gap-5 md:grid-cols-2">
+      <div>
+        <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-600">Contexto bruto</h3>
+        <pre class="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100"><%= JSON.pretty_generate(@audit_log.context_data || {}) %></pre>
+      </div>
+
+      <div>
+        <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-600">Mudanças brutas</h3>
+        <pre class="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100"><%= JSON.pretty_generate(@audit_log.change_set || {}) %></pre>
+      </div>
+    </div>
+  </details>
+</div>

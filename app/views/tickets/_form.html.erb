@@ -1,0 +1,298 @@
+<%
+  units_scope =
+    if current_user&.resident?
+      current_user.units.includes(:block)
+    else
+      Unit.includes(:block)
+    end
+
+  blocks_scope = Block.joins(:units).where(units: { id: units_scope.select(:id) }).distinct
+
+  selected_unit_id = ticket.unit_id.presence
+  selected_block_id = params[:block_select].presence || params.dig(:ticket, :block_id).presence
+
+  if selected_unit_id.present?
+    selected_block_id ||= Unit.where(id: selected_unit_id).pick(:block_id)
+  end
+
+  selected_block_id = selected_block_id.to_i if selected_block_id.present?
+
+  unit_options =
+    if selected_block_id.present?
+      units_scope.where(block_id: selected_block_id).pluck(:id, :identifier)
+    elsif current_user&.resident?
+      # Resident fallback keeps the field usable even if block state is lost after validation errors.
+      units_scope.pluck(:id, :identifier)
+    else
+      []
+    end
+
+  units_by_block =
+    units_scope
+      .group_by(&:block_id)
+      .transform_values { |units| units.map { |u| [u.id, u.identifier] } }
+%>
+
+<% no_units_linked = current_user&.resident? && units_scope.blank? %>
+<% unit_select_disabled = unit_options.empty? %>
+<% unit_select_class = if unit_select_disabled
+  "bg-gray-200 border border-gray-300 text-gray-500 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-3 outline-none transition-all shadow-sm cursor-not-allowed"
+else
+  "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-3 outline-none transition-all shadow-sm cursor-pointer"
+end %>
+
+<% if no_units_linked %>
+  <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded shadow-sm">
+    <p class="text-sm text-yellow-800 font-semibold">
+      Você não possui unidade vinculada. Contate o administrador.
+    </p>
+  </div>
+<% end %>
+
+<%= form_with(model: ticket, local: true, class: "space-y-6") do |form| %>
+  <%= hidden_field_tag "ticket[block_id]", selected_block_id, id: "ticket-block-id" %>
+  
+  <% if ticket.errors.any? %>
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-bold text-red-800">
+            <%= pluralize(ticket.errors.count, "erro impediu", "erros impediram") %> o chamado de ser salvo:
+          </h3>
+          <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+            <% ticket.errors.each do |error| %>
+              <li><%= error.full_message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    
+    <div>
+      <%= label_tag :block_select, "Sua Torre / Bloco", class: "block mb-2 text-sm font-bold text-gray-800" %>
+      <%= select_tag :block_select,
+        options_from_collection_for_select(blocks_scope, :id, :identification, selected_block_id),
+        include_blank: "Selecione a torre...",
+          id: "block-select",
+          disabled: no_units_linked,
+          class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-3 outline-none transition-all shadow-sm cursor-pointer #{'opacity-60 cursor-not-allowed' if no_units_linked}"
+         %>
+    </div>
+
+    <div>
+      <%= form.label :unit_id, "Seu Apartamento", class: "block mb-2 text-sm font-bold text-gray-800" %>
+      <%= form.select :unit_id,
+        options_for_select(unit_options.map { |id, identifier| ["Apartamento #{identifier}", id] }, selected_unit_id),
+        { prompt: "Selecione primeiro a torre..." },
+        {
+          id: "unit-select",
+          disabled: unit_select_disabled,
+          data: { selected_unit_id: selected_unit_id },
+          class: unit_select_class
+        } %>
+    </div>
+  </div>
+
+  <div>
+    <%= form.label :ticket_type_id, "Categoria do Problema", class: "block mb-2 text-sm font-bold text-gray-800" %>
+    <%= form.collection_select :ticket_type_id, TicketType.all, :id, :title, { prompt: "O que está acontecendo?" }, disabled: no_units_linked, class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-3 outline-none transition-all shadow-sm cursor-pointer" %>
+  </div>
+
+  <div>
+    <%= form.label :description, "Descrição Detalhada", class: "block mb-2 text-sm font-bold text-gray-800" %>
+    <%= form.text_area :description, rows: 5, disabled: no_units_linked, class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-4 outline-none transition-all shadow-sm resize-y", placeholder: "Explique o problema em detalhes. Ex: A torneira da pia da cozinha não para de pingar desde ontem..." %>
+  </div>
+
+  <div>
+    <%= form.label :attachments, "Anexos", class: "block mb-2 text-sm font-bold text-gray-800" %>
+    <%= form.file_field :attachments,
+      multiple: false,
+      name: "ticket[attachments][]",
+      accept: "image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif",
+      disabled: no_units_linked,
+      id: "ticket_attachments",
+      class: "hidden" %>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="button" id="add-attachment-button" <%= "disabled" if no_units_linked %> class="btn-brand-soft px-4 py-2 text-sm <%= 'opacity-60 cursor-not-allowed' if no_units_linked %>">
+        Adicionar foto
+      </button>
+
+      <button type="button" id="remove-attachment-button" class="rounded-xl bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-200 hidden">
+        Remover foto
+      </button>
+
+      <p id="attachments-file-name" class="text-sm text-slate-600">Nenhuma imagem selecionada</p>
+    </div>
+
+    <p class="mt-2 text-xs text-gray-500">Apenas 1 imagem (PNG, JPG, WEBP, GIF ou HEIC). Limite de 5MB.</p>
+
+    <div id="attachments-preview" class="mt-3 hidden max-w-sm">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-violet-700">Pré-visualização</p>
+      <div id="attachments-preview-grid" class="grid grid-cols-1 gap-3"></div>
+    </div>
+    <p id="attachments-feedback" class="mt-2 hidden text-xs font-semibold text-rose-600"></p>
+  </div>
+
+  <div class="pt-4 flex justify-end">
+    <%= form.submit "Salvar Chamado", disabled: no_units_linked, class: "btn-brand w-full md:w-auto px-8 py-3 text-sm text-center shadow-md hover:shadow-lg #{'opacity-60 cursor-not-allowed' if no_units_linked}" %>
+  </div>
+<% end %>
+
+<script>
+  document.addEventListener("turbo:load", function() {
+    const blockSelect = document.getElementById("block-select");
+    const blockHiddenInput = document.getElementById("ticket-block-id");
+    const unitSelect = document.getElementById("unit-select");
+    const attachmentsInput = document.getElementById("ticket_attachments");
+    const addAttachmentButton = document.getElementById("add-attachment-button");
+    const removeAttachmentButton = document.getElementById("remove-attachment-button");
+    const attachmentsFileName = document.getElementById("attachments-file-name");
+    const previewContainer = document.getElementById("attachments-preview");
+    const previewGrid = document.getElementById("attachments-preview-grid");
+    const attachmentsFeedback = document.getElementById("attachments-feedback");
+
+    function clearAttachmentUI() {
+      previewGrid.innerHTML = "";
+      previewContainer.classList.add("hidden");
+      attachmentsFeedback.classList.add("hidden");
+      attachmentsFeedback.textContent = "";
+      attachmentsFileName.textContent = "Nenhuma imagem selecionada";
+      removeAttachmentButton.classList.add("hidden");
+    }
+
+    function renderAttachmentPreview(file) {
+      previewGrid.innerHTML = "";
+
+      if (!file || !file.type.startsWith("image/")) {
+        previewContainer.classList.add("hidden");
+        return;
+      }
+
+      const card = document.createElement("div");
+      card.className = "overflow-hidden rounded-lg border border-violet-200 bg-white";
+
+      const image = document.createElement("img");
+      image.className = "h-40 w-full object-cover";
+      image.alt = file.name;
+
+      const caption = document.createElement("p");
+      caption.className = "truncate px-2 py-1 text-[11px] text-slate-600";
+      caption.textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        image.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      card.appendChild(image);
+      card.appendChild(caption);
+      previewGrid.appendChild(card);
+      previewContainer.classList.remove("hidden");
+    }
+
+    if (attachmentsInput && addAttachmentButton && removeAttachmentButton && attachmentsFileName && previewContainer && previewGrid && attachmentsFeedback) {
+      addAttachmentButton.addEventListener("click", function() {
+        attachmentsInput.click();
+      });
+
+      removeAttachmentButton.addEventListener("click", function() {
+        attachmentsInput.value = "";
+        clearAttachmentUI();
+      });
+
+      attachmentsInput.addEventListener("change", function() {
+        const file = (this.files && this.files.length > 0) ? this.files[0] : null;
+
+        if (!file) {
+          clearAttachmentUI();
+          return;
+        }
+
+        attachmentsFileName.textContent = file.name;
+        removeAttachmentButton.classList.remove("hidden");
+
+        if (!file.type.startsWith("image/")) {
+          previewContainer.classList.add("hidden");
+          attachmentsFeedback.textContent = "Formato inválido. Selecione apenas imagens.";
+          attachmentsFeedback.classList.remove("hidden");
+          return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          attachmentsFeedback.textContent = "A imagem selecionada excede o limite de 5MB.";
+          attachmentsFeedback.classList.remove("hidden");
+        } else {
+          attachmentsFeedback.classList.add("hidden");
+          attachmentsFeedback.textContent = "";
+        }
+
+        renderAttachmentPreview(file);
+      });
+
+      if (attachmentsInput.files && attachmentsInput.files.length > 0) {
+        const existingFile = attachmentsInput.files[0];
+        attachmentsFileName.textContent = existingFile.name;
+        removeAttachmentButton.classList.remove("hidden");
+        renderAttachmentPreview(existingFile);
+      }
+    }
+
+    if (!blockSelect || !unitSelect || blockSelect.disabled) return;
+
+    const unitsData = <%= raw units_by_block.to_json %>;
+    const selectedUnitId = unitSelect.dataset.selectedUnitId;
+
+    const populateUnits = function(blockId, selectedId) {
+      unitSelect.innerHTML = '<option value="">Selecione o seu apartamento...</option>';
+
+      if (blockId && unitsData[blockId]) {
+        unitSelect.disabled = false;
+        unitSelect.classList.remove("bg-gray-200", "text-gray-500", "cursor-not-allowed");
+        unitSelect.classList.add("bg-gray-50", "text-gray-900", "cursor-pointer");
+
+        unitsData[blockId].forEach(function(unit) {
+          const option = document.createElement("option");
+          option.value = unit[0];
+          option.text = `Apartamento ${unit[1]}`;
+
+          if (selectedId && String(selectedId) === String(unit[0])) {
+            option.selected = true;
+          }
+
+          unitSelect.appendChild(option);
+        });
+      } else {
+        unitSelect.disabled = true;
+        unitSelect.classList.add("bg-gray-200", "text-gray-500", "cursor-not-allowed");
+        unitSelect.classList.remove("bg-gray-50", "text-gray-900", "cursor-pointer");
+        unitSelect.innerHTML = '<option value="">Selecione primeiro a torre...</option>';
+      }
+    };
+
+    if (blockSelect.value) {
+      populateUnits(blockSelect.value, selectedUnitId);
+    }
+
+    if (blockHiddenInput && blockSelect.value) {
+      blockHiddenInput.value = blockSelect.value;
+    }
+
+    blockSelect.onchange = function() {
+      if (blockHiddenInput) {
+        blockHiddenInput.value = this.value;
+      }
+
+      populateUnits(this.value, null);
+    };
+  });
+</script>

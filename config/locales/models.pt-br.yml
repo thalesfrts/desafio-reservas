@@ -1,0 +1,54 @@
+pt-BR:
+  activerecord:
+    models:
+      user: "Usuário"
+      block: "Bloco/Torre"
+      unit: "Apartamento"
+      ticket: "Chamado"
+      comment: "Comentário"
+      ticket_status: "Status de chamado"
+      ticket_type: "Tipo de chamado"
+      user_unit: "Vínculo morador-unidade"
+    attributes:
+      user:
+        name: "Nome"
+        email: "E-mail"
+        role: "Perfil"
+        password: "Senha"
+        password_confirmation: "Confirmação de Senha"
+        remember_me: "Lembrar-me"
+      block:
+        identification: "Identificação"
+        floors_count: "Quantidade de Andares"
+        apartments_per_floor: "Apartamentos por Andar"
+      unit:
+        identifier: "Número do Apartamento"
+      ticket:
+        description: "Descrição"
+        unit: "Unidade"
+        ticket_type: "Tipo de chamado"
+        ticket_status: "Status"
+        reopen_reason: "Motivo"
+        closing_note: "Parecer"
+      comment:
+        body: "Mensagem"
+      ticket_status:
+        name: "Nome"
+        is_default: "Status padrão"
+        is_final: "Status de conclusão"
+      ticket_type:
+        title: "Título"
+        sla_hours: "Prazo (SLA em horas)"
+      user_unit:
+        user: "Morador"
+        user_id: "Morador"
+        unit: "Unidade"
+        unit_id: "Unidade"
+    errors:
+      models:
+        user:
+          attributes:
+            password:
+              too_short: "é muito curta (mínimo de %{count} caracteres)"
+            password_confirmation:
+              confirmation: "não coincide com a senha informada"
