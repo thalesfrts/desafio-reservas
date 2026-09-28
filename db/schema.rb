@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_15_170000) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_28_183907) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -40,6 +40,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_15_170000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "areas", force: :cascade do |t|
+    t.string "name"
+    t.boolean "active"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "audit_logs", force: :cascade do |t|
@@ -93,6 +100,19 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_15_170000) do
     t.index ["ticket_id"], name: "index_notifications_on_ticket_id"
     t.index ["user_id", "read_at"], name: "index_notifications_on_user_id_and_read_at"
     t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
+  create_table "reservations", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "area_id", null: false
+    t.datetime "start_time", null: false
+    t.datetime "end_time", null: false
+    t.integer "status", default: 0, null: false
+    t.text "denial_reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["area_id"], name: "index_reservations_on_area_id"
+    t.index ["user_id"], name: "index_reservations_on_user_id"
   end
 
   create_table "ticket_statuses", force: :cascade do |t|
@@ -182,6 +202,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_15_170000) do
   add_foreign_key "notifications", "tickets"
   add_foreign_key "notifications", "users"
   add_foreign_key "notifications", "users", column: "actor_id"
+  add_foreign_key "reservations", "areas"
+  add_foreign_key "reservations", "users"
   add_foreign_key "tickets", "ticket_statuses"
   add_foreign_key "tickets", "ticket_types"
   add_foreign_key "tickets", "units"
