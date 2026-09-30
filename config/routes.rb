@@ -1,10 +1,15 @@
 Rails.application.routes.draw do
+  get "reservations/index"
+  get "reservations/new"
+  get "reservations/create"
+  get "reservations/destroy"
   resources :tickets, except: [ :edit ] do
     resources :comments, only: [ :create ]
   end
   resources :ticket_statuses, except: [ :show ]
   resources :ticket_types, except: [ :show ]
   resources :blocks, except: [ :show ]
+  resources :reservations, only: [:index, :new, :create, :destroy]
   resources :notifications, only: [ :index, :update ] do
     patch :mark_all_as_read, on: :collection
     delete :destroy_all, on: :collection
@@ -21,10 +26,20 @@ Rails.application.routes.draw do
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
 
   namespace :admin do
+    get "reservations/index"
+    get "reservations/approve"
+    get "reservations/deny"
     resources :users
     resources :user_units, only: [ :index, :create, :destroy ]
     resources :audit_logs, only: [ :index, :show ]
     get "units", to: "units#index"
+    resources :areas
+    resources :reservations, only: [:index, :destroy] do
+      member do
+        patch :approve
+        patch :deny
+      end
+    end
   end
 
   # Defines the root path route ("/")

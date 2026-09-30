@@ -25,5 +25,8 @@ class Ability
     can :read, Ticket, unit_id: user.unit_ids
     can :create, Ticket, user_id: user.id
     can [ :read, :create ], Comment, ticket: { unit_id: user.unit_ids }
+    # Permissões da nova funcionalidade de Reservas
+    can :read, Area
+    can [:read, :create, :destroy], Reservation, user_id: user.id
   end
 end
