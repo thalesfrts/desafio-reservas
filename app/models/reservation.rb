@@ -1,7 +1,7 @@
 class Reservation < ApplicationRecord
   belongs_to :user
   belongs_to :area
-  
+
   # Habilita o rastreio de auditoria nesta tabela
   has_many :audit_logs, as: :auditable, dependent: :destroy
 
@@ -9,7 +9,7 @@ class Reservation < ApplicationRecord
   enum status: { requested: 0, approved: 1, denied: 2, canceled: 3 }
 
   validates :start_time, :end_time, presence: true
-  
+
   # RN-01-08: A negação exige um motivo não vazio
   validates :denial_reason, presence: true, if: :denied?
 
@@ -22,7 +22,7 @@ class Reservation < ApplicationRecord
   # RN-01-02: O horário de fim deve ser posterior ao de início
   def end_time_after_start_time
     return if end_time.blank? || start_time.blank?
-    
+
     if end_time <= start_time
       errors.add(:end_time, "deve ser posterior ao horário de início")
     end
@@ -31,7 +31,7 @@ class Reservation < ApplicationRecord
   # RN-01-02: O início não pode estar no passado. Usamos Time.current como referência consistente (RNF-02).
   def start_time_in_future
     return if start_time.blank?
-    
+
     if start_time <= Time.current
       errors.add(:start_time, "deve ser uma data e horário no futuro")
     end

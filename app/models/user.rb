@@ -9,10 +9,10 @@ class User < ApplicationRecord
   has_many :notifications, dependent: :destroy
   has_many :sent_notifications, class_name: "Notification", foreign_key: :actor_id, dependent: :nullify
   has_many :audit_logs, class_name: "AuditLog", foreign_key: :actor_id, dependent: :nullify
-  
+
   # Nova relação adicionada para a funcionalidade de Reservas
   has_many :reservations, dependent: :destroy
-  
+
   devise :database_authenticatable, :rememberable, :validatable
   enum :role, { resident: 0, collaborator: 1, administrator: 2 }, default: :resident
 
