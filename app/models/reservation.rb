@@ -15,8 +15,13 @@ class Reservation < ApplicationRecord
 
   validate :end_time_after_start_time
   validate :start_time_in_future, on: :create
-  validate :no_conflicting_approved_reservations, if: :approved?
+  validate :no_conflicting_approved_reservations, if: -> { requested? || approved? }
 
+  # Verifica se a reserva ainda pode ser cancelada (RN-01-11 e RN-01-12)
+  def cancellable?
+    (requested? || approved?) && start_time > Time.current
+  end
+  
   private
 
   # RN-01-02: O horário de fim deve ser posterior ao de início
