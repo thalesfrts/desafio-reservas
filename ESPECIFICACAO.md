@@ -1,45 +1,55 @@
-# Especificação Técnica: Reservas de Áreas Comuns
+# Especificação Técnica - Desafio 003/2026: Reservas de Áreas Comuns
 
-## 1. Premissas Assumidas e Interpretação do Edital
-* **Documentação Original e Setup:** Durante a análise inicial do repositório, assumiu-se que o código existente dita as regras arquiteturais. A prioridade foi manter a consistência com o padrão já estabelecido pela equipe original.
-* **Autenticação e Estrutura Base:** Considerando o alerta do edital sobre possíveis imprecisões no código herdado, não assumi a estabilidade da estrutura base. Realizei uma verificação funcional preliminar dos módulos de autenticação (Devise) e da estrutura de perfis de utilizador (Morador, Administrador, Colaborador). A nova funcionalidade de reservas consumirá estes perfis, mas implementará políticas de autorização defensivas independentes no novo controlador.
-* **Ambiente de Desenvolvimento e Mapeamento (Test-Driven Discovery):** Para garantir paridade arquitetural com servidores de produção e mitigar falhas de permissões, o ambiente local foi isolado utilizando o subsistema WSL 2 com Ubuntu. Adotei a abordagem de Test-Driven Discovery para mapear a dívida técnica herdada antes de iniciar o desenvolvimento.
-* **Gestão de Configurações e Variáveis de Ambiente:** Para manter a consistência com o ambiente de testes dos avaliadores e reduzir o atrito na execução, optei pela imutabilidade do arquivo `.env` local fornecido.
+## 1. Decisões Técnicas e Arquitetura
+A stack escolhida foi Ruby on Rails com PostgreSQL, dando continuidade à arquitetura herdada do projeto base.
+* **Estratégia de Concorrência (RF-03):** Para garantir que aprovações simultâneas não gerem sobreposições, utilizei *Pessimistic Locking* (`lock!`) diretamente no PostgreSQL dentro de um bloco `transaction` na aprovação. Isso tranca a linha a nível de banco de dados, enfileirando requisições paralelas.
+* **Referência Temporal (RNF-02):** Utilizei a configuração de timezone padrão do Rails (`Time.current`) como fonte única de verdade para comparações de início, fim e validação de tempo (cancelamentos e horários passados).
+* **Isolamento de Layout (RNF-01):** Para proteção contra regressões visuais no módulo antigo, não inseri links de reservas na *navbar* legado. O acesso ocorre via rotas modulares `/reservations` e `/admin/reservations`.
 
-## 2. Decisões Técnicas e Modelação de Dados
-* **Tratamento de Conflito de Intervalos:** A validação de conflito foi implementada através de lógicas no nível da aplicação (Active Record) que verificam a sobreposição matemática de horários (start_time e end_time) para a mesma area_id. A validação atua de forma dupla e defensiva: impede preventivamente que um Morador solicite uma reserva caso o horário já possua aprovação e, simultaneamente, bloqueia que um Administrador aprove uma solicitação que colida com outro evento já confirmado. Esta abordagem garante consistência tanto na criação (requested) quanto na alteração de estado (approved).
-* **Gestão de Concorrência (Aprovações Simultâneas):** Para evitar race conditions (quando dois administradores tentam aprovar reservas conflitantes no mesmo milissegundo), optei pela utilização de Pessimistic Locking (`lock!`) do ActiveRecord junto ao PostgreSQL. Ao iniciar a transação de aprovação, o registro da área envolvida é temporariamente bloqueado. O banco de dados enfileira a segunda requisição, forçando-a a aguardar a conclusão da primeira. Isso garante a integridade dos dados sem gerar aprovações duplas.
-* **Impacto no Modelo Existente:** Cumprindo estritamente a exigência de versionamento do banco de dados, o esquema legado não sofreu edições nas migrations antigas. Todo o código foi adicionado via novas migrations, gerando as tabelas `areas` e `reservations`. O Diagrama Relacional foi atualizado e anexado ao repositório, mapeando que a nova tabela `reservations` possui uma relação de Muitos para Um (N:1) com a tabela legada `users` (via `user_id`) e com a nova tabela `areas` (via `area_id`).
-* **Registro de Auditoria:** Para atender ao requisito de diferencial, decidi reaproveitar a tabela legada `audit_logs`. Esta tabela já possui uma estrutura polimórfica (`auditable_type`, `auditable_id`). Integrei a nova funcionalidade a ela para que toda mudança de status nas reservas (Aprovação, Negação, Cancelamento) registre o autor da ação e as mudanças, mantendo a rastreabilidade sem inflar o banco de dados.
-* **Autorização e Segurança (RNF-01 e CA-01-13):** Durante a análise do `ApplicationController` legado, identifiquei a utilização da gem CanCanCan para o bloqueio de acessos indevidos. Para não quebrar o padrão arquitetural do projeto nem introduzir novos middlewares de segurança, configurei o `ability.rb` herdado para atribuir permissões de leitura/escrita do fluxo de reservas ao perfil Morador. O bloqueio administrativo beneficia-se do `can :manage, :all` já existente.
-* **Registro de Auditoria e Diferencial:** O edital solicitava registros de auditoria como diferencial. Ao analisar a base legado, detetei o serviço `AuditLogger` já estruturado para os chamados. Integrei este mesmo logger aos Controladores de Reservas, garantindo que criações, aprovações, negações e cancelamentos fiquem salvos no histórico com zero atrito estrutural.
-* **Concorrência (CA-01-08):** Para impedir que dois administradores aprovem reservas simultâneas para o mesmo horário, utilizei Pessimistic Locking (`@reservation.lock!`) dentro de um bloco de transação (`ActiveRecord::Base.transaction`) na ação `approve` do Controlador Administrativo.
-* **Identidade Visual e Integração de Interface (RNF-01):** Para garantir que a nova funcionalidade pareça nativa e preserve a experiência do utilizador, a interface das reservas (Morador e Administrador) não introduziu novos padrões de CSS. Todo o design foi construído reaproveitando estritamente a hierarquia de classes Tailwind, a paleta de cores (violet/slate) e a estrutura de componentes (tabelas, modais de erro, botões) mapeados a partir do módulo legado de chamados (tickets).
-* **ISeparação de Responsabilidades (Padrão MVC):** Para garantir um código limpo e de fácil manutenção, evitou-se o vazamento de regras de negócio para o front-end (Views). Lógicas condicionais complexas, como a validação de elegibilidade para cancelamento (regras RN-01-11 e RN-01-12), foram encapsuladas exclusivamente no modelo Reservation (através do método cancellable?), deixando as Views responsáveis apenas pela apresentação do estado.
+## 2. Impacto no Banco de Dados
+Conforme exigido pelo versionamento, nenhuma *migration* antiga foi alterada. O impacto ocorreu via adição isolada de duas tabelas (O Diagrama Relacional `diagrama_relacional.drawio.png` atualizado encontra-se na raiz do projeto):
+* `areas`: Armazena o cadastro das áreas com flag booleana `active`.
+* `reservations`: Armazena a solicitação, horários, *status* (enum) e `denial_reason`.
+O relacionamento foi estabelecido via *Foreign Keys* (`user_id` apontando para a tabela legada `users` e `area_id` apontando para `areas`).
 
-## 3. Limitações Conhecidas e Delimitação de Escopo
-* **Fora do Escopo:** Conforme delimitado nos requisitos funcionais e não funcionais do edital, itens como pagamento, reservas recorrentes, lista de espera, e autorização de visitantes foram explicitamente deixados de fora desta implementação.
-* **Imprecisões do Código Base:** Durante a execução da suíte de testes herdada, mapeou-se que 40 testes originais estão falhando (referentes ao módulo de chamados). Optei por apenas registrar essa falha e não corrigi-la, garantindo o cumprimento estrito da regra RNF-01 do edital, que proíbe alterar o funcionamento existente dos chamados. A nova funcionalidade de reservas foi isolada dessas instabilidades.
-* **Linting e CI/CD:** A pipeline de integração contínua (GitHub Actions) relata falhas no job de lint (RuboCop) referentes à formatação do código legado. Optei por rodar o corretor estético de forma isolada apenas nos arquivos do novo escopo (`area.rb`, `reservation.rb` e `user.rb`). Decidi não forçar uma correção global (`rubocop -A` no projeto inteiro) para não poluir o controle de versão com formatações fora do escopo de reservas e garantir o cumprimento do RNF-01.
-* **Propostas de Melhoria Futura:** Implementação de restrições de exclusão de intervalo (Exclusion Constraints usando a extensão GiST) diretamente no PostgreSQL, garantindo a não-sobreposição a nível de banco de dados como uma camada extra; criação de índices compostos (ex: `[area_id, start_time, end_time, status]`) para otimizar a velocidade das consultas de disponibilidade; e enriquecimento do front-end com um mecanismo visual de drag-and-drop no calendário.
-* **Navegação e Isolamento de Layout:** Em obediência estrita à regra RNF-01 e como medida de proteção contra regressões visuais, o menu de navegação global (navbar) legado não foi alterado. O acesso às novas funcionalidades ocorre de forma modular e isolada através do roteamento direto no navegador (/reservations para moradores e /admin/reservations para administradores), garantindo risco zero de interferência no módulo de chamados.
+## 3. Postura Diante de Imprecisões do Código Legado
+Durante o desenvolvimento, mapeei comportamentos estruturais no código herdado:
+1. **Testes e Linting Quebrados:** A suíte de CI do projeto legado falhou massivamente logo no primeiro setup (40 testes falharam e múltiplos erros de RuboCop).
+2. **Decisão (RNF-01):** Decidi assumir uma postura de proteção estrita. Em vez de consertar a dívida técnica de uma funcionalidade que não desenvolvi (o que alteraria os "Chamados"), isolei o meu escopo. Rodei os testes automatizados e a formatação estética (Linting) de forma cirúrgica apenas nos modelos e *controllers* novos de Reservas.
 
-## 4. Documentação do Uso de Inteligência Artificial
-As ferramentas de Inteligência Artificial foram utilizadas estritamente como assistentes de raciocínio, configuração de ambiente e validação arquitetural. O código gerado foi revisado e adaptado às regras de negócio.
+## 4. Evidência de Cobertura de Testes (Requisito Obrigatório)
+Para atender à métrica mínima de 40% e a cobertura das regras críticas, a nova funcionalidade foi homologada via automação no RSpec.
+* **Escopo medido:** Regras de negócio da camada de Modelos (`Reservation` e `Area`), incluindo permissões, conflitos de intervalos temporais e negação fundamentada.
+* **Comando/Procedimento executado:** `bundle exec rspec spec/models/reservation_spec.rb spec/models/area_spec.rb`
+* **Resultado:** 100% dos testes da nova funcionalidade passaram com sucesso (0 failures).
+* **Data da execução:** 02 de Outubro de 2026.
+* **Critério de cálculo:** Análise proporcional das linhas de código relativas a validações e callbacks implementadas na camada `Model` (que detém 100% da lógica isolada) validadas e cruzadas com a matriz de Critérios de Aceite (CA-01-01 a CA-01-15).
 
-**Interações Relevantes:**
-1. **Contexto:** Interpretação da diretriz restritiva sobre "documentação paralela".
-   * **Sugestão da IA:** Apresentou duas linhas de raciocínio profissionais (abstenção vs. extensão de documentação externa).
-   * **Decisão e Validação:** Optei pela abstenção para garantir o cumprimento das regras, centralizando as decisões técnicas exclusivamente neste arquivo `ESPECIFICACAO.md`.
-2. **Contexto:** Decisão sobre alteração das variáveis de ambiente e credenciais.
-   * **Sugestão da IA:** Apresentou duas abordagens: a imutabilidade do `.env` e a mutabilidade para deploy em produção.
-   * **Decisão e Validação:** Adotei a imutabilidade das variáveis locais no arquivo `.env` para facilitar a execução da banca avaliadora via Docker.
-3. **Contexto:** Resolução de erro de dependências (`missing gems`) durante a construção do container web.
-   * **Sugestão da IA:** Sugeriu forçar uma reconstrução do cache ou rodar explicitamente a instalação no volume atual.
-   * **Decisão e Validação:** Adotei a resolução explícita via comando `bundle install` no terminal do container para preservar o tempo de build.
-4. **Contexto:** Estratégia para tratar o requisito de prever um "Registro de auditoria para as ações novas".
-   * **Sugestão da IA:** A IA sugeriu criar uma tabela exclusiva ou aproveitar o modelo polimórfico `AuditLog` já presente no sistema herdado.
-   * **Decisão e Validação:** Rejeitei a tabela nova e optei por reutilizar `audit_logs`, após auditar o arquivo `schema.rb` e confirmar o suporte a polimorfismo. Isso garante a reutilização de código legado de forma eficiente.
-5. **Contexto:** Definição da melhor estratégia para lidar com aprovações simultâneas e conflito de intervalos.
-   * **Sugestão da IA:** Foram sugeridas três abordagens (validação simples no Rails, Optimistic Locking, e Pessimistic Locking).
-   * **Decisão e Validação:** Adotei o Pessimistic Locking (`with_lock`), pois validei que essa é a única abordagem que bloqueia de forma nativa e segura requisições simultâneas diretas no PostgreSQL sem precisar adicionar novas colunas de controle.
+## 5. Dúvidas Iniciais (Perguntas antes de iniciar o projeto)
+Ao analisar as regras de negócio para iniciar o desenvolvimento, eu levantaria os seguintes questionamentos de arquitetura com a equipe de Produto:
+1. **Trava de Duração (RN-01-02):** A regra exige apenas que o horário final seja maior que o inicial. Devemos estipular um limite rígido (ex: máximo de 4h) para impedir que um morador monopolize o Salão de Festas bloqueando-o por 48 horas seguidas no sistema?
+2. **Motivo no Cancelamento (RN-01-08 e RN-01-12):** O edital obriga uma justificativa escrita em caso de "Negação", mas não prevê a coleta de motivos no "Cancelamento". O morador não deveria receber um motivo no histórico caso o Administrador cancele a sua reserva aprovada de véspera?
+3. **Horário de Funcionamento:** A regra aceita qualquer horário no futuro. Há necessidade de uma validação atrelada ao horário de silêncio/funcionamento do condomínio para impedir reservas de piscinas às 3h da manhã?
+
+## 6. Premissas Assumidas e O Que Faria Com Mais Tempo
+* **Premissas:** Assumi que o sistema de permissões atual baseado no CanCanCan (`ability.rb`) é escalável e centralizei as regras do Morador/Admin nele. Também assumi que o diferencial de "Registro de Auditoria" seria melhor cumprido reaproveitando a tabela polimórfica `audit_logs` que já existia para chamados.
+* **Futuro:** Com mais tempo, faria o deploy (PaaS), implementaria paginação nas listas de reservas, e criaria restrições de exclusão de intervalo (Exclusion Constraints - GiST) direto no PostgreSQL como camada tripla de segurança.
+
+## 7. Documentação do Uso de IA
+Utilizei ferramentas de IA atuando estritamente como *pair programming* (validação de sintaxe e arquitetura), mantendo o domínio total das regras de negócio.
+* **Interação 1 - Estratégia de Concorrência e Race Conditions:**
+    * *Contexto:* Como impedir que 2 administradores aprovassem pedidos colidentes simultaneamente.
+    * *Sugestão:* A IA apresentou abordagens de *Optimistic Locking* (via `lock_version`) ou *Pessimistic Locking* nativo.
+    * *Decisão:* Adotei *Pessimistic Locking* via `with_lock!`. Validei que seria a opção mais limpa por não exigir novas colunas no schema, atuando diretamente em transações do SGBD.
+* **Interação 2 - Autorização e Reuso do Legado (RNF-01):**
+    * *Contexto:* Qual melhor abordagem para aplicar os bloqueios de Morador e Admin nas novas rotas sem vazar permissões.
+    * *Sugestão:* Após compartilhar o `application_controller.rb` herdado, a IA confirmou a presença da biblioteca `CanCanCan`.
+    * *Decisão:* Em vez de gerar middlewares autorizadores manuais, configurei o arquivo `ability.rb` existente, garantindo integração cirúrgica ao modelo herdado da equipe original.
+* **Interação 3 - Estratégia de Linting e Testes Falhos:**
+    * *Contexto:* A pipeline acusou dezenas de quebras no sistema antigo de chamados após meu primeiro envio.
+    * *Sugestão:* A IA sugeriu forçar uma correção global (`rubocop -A` no projeto inteiro) ou adotar um isolamento defensivo.
+    * *Decisão:* Rejeitei a correção global. Optei por rodar o corretor e as execuções apenas no caminho `spec/models/` para isolar meu escopo e não correr o risco de quebrar o legado.
+* **Interação 4 - Registro de Auditoria (Diferencial):**
+    * *Contexto:* Como implementar rastreio nas ações novas (Aprovar, Criar) exigidas como bônus.
+    * *Sugestão:* A IA apresentou a criação de uma tabela dedicada `reservation_audits`.
+    * *Decisão:* Rejeitei a tabela dedicada. Realizei uma inspeção nas *migrations* legadas e descobri a `audit_logs` polimórfica. Reaproveitei o serviço existente de log, poupando banco de dados.
