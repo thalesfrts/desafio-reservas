@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Reservation, type: :model do
   # dados falsos para o banco de dados de testes aceitar as relações
-  let(:user) { User.create!(email: "morador_teste@condominio.local", password: "password123") }
+  let(:user) { User.create!(name: "Morador Teste", email: "morador_teste@condominio.local", password: "password123") }
   let(:area) { Area.create!(name: "Churrasqueira Teste", active: true) }
 
   describe 'RN-01-02: Validações de data e hora' do
