@@ -1,0 +1,68 @@
+<% provide(:title, "Minhas Reservas | Portal Condominial") %>
+<% provide(:page_heading, "Reservas") %>
+
+<div class="w-full">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="font-display text-4xl font-extrabold tracking-tight text-slate-900">Minhas Reservas</h1>
+    </div>
+    <%= link_to "Nova Reserva", new_reservation_path, class: "btn-brand inline-flex items-center justify-center px-5 py-2.5 text-sm" %>
+  </div>
+
+  <div class="panel-surface overflow-hidden rounded-2xl">
+    <% if @reservations.empty? %>
+      <div class="py-12 text-center">
+        <p class="text-sm font-medium text-slate-500">Você ainda não possui solicitações de reserva.</p>
+      </div>
+    <% else %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-violet-100/80">
+          <thead class="bg-violet-50/60">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">Área</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">Período</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-violet-700">Status</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-violet-700">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-violet-100/80 bg-white/95">
+            <% @reservations.each do |res| %>
+              <tr class="transition-colors hover:bg-violet-50/60">
+                <td class="whitespace-nowrap px-6 py-4 text-sm font-bold text-slate-900">
+                  <%= res.area.name %>
+                </td>
+                <td class="px-6 py-4 text-xs text-slate-600">
+                  <p><span class="font-semibold text-slate-800">Início:</span> <%= l(res.start_time, format: "%d/%m/%Y %H:%M") %></p>
+                  <p><span class="font-semibold text-slate-800">Fim:</span> <%= l(res.end_time, format: "%d/%m/%Y %H:%M") %></p>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4">
+                  <% status_colors = { 
+                    'requested' => 'bg-amber-100 text-amber-800',
+                    'approved' => 'bg-emerald-100 text-emerald-800',
+                    'denied' => 'bg-rose-100 text-rose-800',
+                    'canceled' => 'bg-slate-100 text-slate-800'
+                  } %>
+                  <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold leading-5 <%= status_colors[res.status] %>">
+                    <%= I18n.t("activerecord.attributes.reservation.statuses.#{res.status}", default: res.status.titleize) %>
+                  </span>
+                  <% if res.denied? && res.denial_reason.present? %>
+                    <p class="mt-1 text-xs text-rose-600 max-w-xs truncate" title="<%= res.denial_reason %>">
+                      Motivo: <%= res.denial_reason %>
+                    </p>
+                  <% end %>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                  <% if res.cancellable? %>
+                    <%= button_to "Cancelar", reservation_path(res), method: :delete, data: { turbo_confirm: "Tem certeza que deseja cancelar esta reserva?" }, class: "font-semibold text-rose-600 hover:text-rose-800" %>
+                  <% else %>
+                    <span class="text-slate-400">---</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</div>

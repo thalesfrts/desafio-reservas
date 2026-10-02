@@ -1,0 +1,57 @@
+<% provide(:title, "Nova Reserva | Portal Condominial") %>
+<% provide(:page_heading, "Reservas") %>
+
+<div class="w-full max-w-3xl">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="font-display text-3xl font-extrabold tracking-tight text-slate-900">Solicitar Reserva</h1>
+    <%= link_to "Voltar", reservations_path, class: "btn-brand-soft px-4 py-2 text-sm" %>
+  </div>
+
+  <div class="panel-surface overflow-hidden rounded-2xl p-6 md:p-8">
+    <%= form_with(model: @reservation, local: true, class: "space-y-6") do |form| %>
+      
+      <% if @reservation.errors.any? %>
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-bold text-red-800">
+                <%= pluralize(@reservation.errors.count, "erro impediu", "erros impediram") %> a solicitação:
+              </h3>
+              <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                <% @reservation.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <div>
+        <%= form.label :area_id, "Área Comum", class: "block mb-2 text-sm font-bold text-gray-800" %>
+        <%= form.collection_select :area_id, @areas, :id, :name, { prompt: "Selecione a área que deseja reservar..." }, class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-3 outline-none transition-all shadow-sm cursor-pointer" %>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <%= form.label :start_time, "Horário de Início", class: "block mb-2 text-sm font-bold text-gray-800" %>
+          <%= form.datetime_field :start_time, class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-3 outline-none transition-all shadow-sm cursor-pointer" %>
+        </div>
+
+        <div>
+          <%= form.label :end_time, "Horário de Fim", class: "block mb-2 text-sm font-bold text-gray-800" %>
+          <%= form.datetime_field :end_time, class: "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-violet-200 focus:border-violet-500 block w-full p-3 outline-none transition-all shadow-sm cursor-pointer" %>
+        </div>
+      </div>
+
+      <div class="pt-4 flex justify-end">
+        <%= form.submit "Solicitar Reserva", class: "btn-brand w-full md:w-auto px-8 py-3 text-sm text-center shadow-md hover:shadow-lg" %>
+      </div>
+    <% end %>
+  </div>
+</div>

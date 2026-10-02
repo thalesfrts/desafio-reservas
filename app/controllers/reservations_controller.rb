@@ -13,10 +13,10 @@ class ReservationsController < ApplicationController
 
   def create
     @reservation.user = current_user
-    
+
     if @reservation.save
       audit_action(action: "reservation.created", auditable: @reservation)
-      redirect_to reservations_path, notice: 'Reserva solicitada com sucesso.'
+      redirect_to reservations_path, notice: "Reserva solicitada com sucesso."
     else
       @areas = Area.all
       render :new, status: :unprocessable_entity
@@ -28,12 +28,12 @@ class ReservationsController < ApplicationController
     if @reservation.start_time > Time.current && (@reservation.requested? || @reservation.approved?)
       if @reservation.update(status: :canceled)
         audit_action(action: "reservation.canceled", auditable: @reservation)
-        redirect_to reservations_path, notice: 'Reserva cancelada com sucesso.'
+        redirect_to reservations_path, notice: "Reserva cancelada com sucesso."
       else
-        redirect_to reservations_path, alert: 'Erro ao cancelar a reserva.'
+        redirect_to reservations_path, alert: "Erro ao cancelar a reserva."
       end
     else
-      redirect_to reservations_path, alert: 'Esta reserva não pode ser cancelada.'
+      redirect_to reservations_path, alert: "Esta reserva não pode ser cancelada."
     end
   end
 

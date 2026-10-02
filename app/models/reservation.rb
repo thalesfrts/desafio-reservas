@@ -6,7 +6,7 @@ class Reservation < ApplicationRecord
   has_many :audit_logs, as: :auditable, dependent: :destroy
 
   # RN-01-04 e RN-01-13: Estados do fluxo da reserva
-  enum status: { requested: 0, approved: 1, denied: 2, canceled: 3 }
+  enum :status, { requested: 0, approved: 1, denied: 2, canceled: 3 }
 
   validates :start_time, :end_time, presence: true
 
@@ -21,7 +21,7 @@ class Reservation < ApplicationRecord
   def cancellable?
     (requested? || approved?) && start_time > Time.current
   end
-  
+
   private
 
   # RN-01-02: O horário de fim deve ser posterior ao de início
