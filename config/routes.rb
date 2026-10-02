@@ -9,7 +9,7 @@ Rails.application.routes.draw do
   resources :ticket_statuses, except: [ :show ]
   resources :ticket_types, except: [ :show ]
   resources :blocks, except: [ :show ]
-  resources :reservations, only: [:index, :new, :create, :destroy]
+  resources :reservations, only: [ :index, :new, :create, :destroy ]
   resources :notifications, only: [ :index, :update ] do
     patch :mark_all_as_read, on: :collection
     delete :destroy_all, on: :collection
@@ -34,7 +34,7 @@ Rails.application.routes.draw do
     resources :audit_logs, only: [ :index, :show ]
     get "units", to: "units#index"
     resources :areas
-    resources :reservations, only: [:index, :destroy] do
+    resources :reservations, only: [ :index, :destroy ] do
       member do
         patch :approve
         patch :deny
