@@ -5,6 +5,7 @@ A stack escolhida foi Ruby on Rails com PostgreSQL, dando continuidade à arquit
 * **Estratégia de Concorrência (RF-03):** Para garantir que aprovações simultâneas não gerem sobreposições, utilizei *Pessimistic Locking* (`lock!`) diretamente no PostgreSQL dentro de um bloco `transaction` na aprovação. Isso tranca a linha a nível de banco de dados, enfileirando requisições paralelas.
 * **Referência Temporal (RNF-02):** Utilizei a configuração de timezone padrão do Rails (`Time.current`) como fonte única de verdade para comparações de início, fim e validação de tempo (cancelamentos e horários passados).
 * **Isolamento de Layout (RNF-01):** Para proteção contra regressões visuais no módulo antigo, não inseri links de reservas na *navbar* legado. O acesso ocorre via rotas modulares `/reservations` e `/admin/reservations`.
+* **Estratégia de Deploy e Infraestrutura (Bónus):** A aplicação foi disponibilizada na nuvem (Render). Para garantir a integridade do requisito RNF-01 (não quebrar as configurações originais do ambiente local dos avaliadores), criei um cofre de credenciais exclusivo para produção (`production.yml.enc`), isolando completamente o ambiente na nuvem e mantendo o repositório legado intacto. A base de dados de produção encontra-se estruturalmente conectada, mas sem os dados da *seed* inicial devido a bloqueios de terminal do plano gratuito, limitação esta que optei por documentar em vez de adulterar os scripts de inicialização do projeto base.
 
 ## 2. Impacto no Banco de Dados
 Conforme exigido pelo versionamento, nenhuma *migration* antiga foi alterada. O impacto ocorreu via adição isolada de duas tabelas (O Diagrama Relacional `diagrama_relacional.drawio.png` atualizado encontra-se na raiz do projeto):
@@ -32,8 +33,8 @@ Ao analisar as regras de negócio para iniciar o desenvolvimento, eu levantaria 
 3. **Horário de Funcionamento:** A regra aceita qualquer horário no futuro. Há necessidade de uma validação atrelada ao horário de silêncio/funcionamento do condomínio para impedir reservas de piscinas às 3h da manhã?
 
 ## 6. Premissas Assumidas e O Que Faria Com Mais Tempo
-* **Premissas:** Assumi que o sistema de permissões atual baseado no CanCanCan (`ability.rb`) é escalável e centralizei as regras do Morador/Admin nele. Também assumi que o diferencial de "Registro de Auditoria" seria melhor cumprido reaproveitando a tabela polimórfica `audit_logs` que já existia para chamados.
-* **Futuro:** Com mais tempo, faria o deploy (PaaS), implementaria paginação nas listas de reservas, e criaria restrições de exclusão de intervalo (Exclusion Constraints - GiST) direto no PostgreSQL como camada tripla de segurança.
+* **Premissas:** Assumi que o sistema de permissões atual baseado no CanCanCan (`ability.rb`) é escalável e centralizei as regras do Morador/Admin nele. Também assumi que o diferencial de "Registro de Auditoria" seria melhor cumprido reaproveitando a tabela polimórfica `audit_logs` que já existia para chamados. Os diferenciais de Auditoria e Deploy foram concluídos com sucesso.
+* **Futuro:** Com mais tempo, implementaria paginação nas listas de reservas e criaria restrições de exclusão de intervalo (Exclusion Constraints - GiST) direto no PostgreSQL como camada tripla de segurança.
 
 ## 7. Documentação do Uso de IA
 Utilizei ferramentas de IA atuando estritamente como *pair programming* (validação de sintaxe e arquitetura), mantendo o domínio total das regras de negócio.
@@ -53,3 +54,7 @@ Utilizei ferramentas de IA atuando estritamente como *pair programming* (valida�
     * *Contexto:* Como implementar rastreio nas ações novas (Aprovar, Criar) exigidas como bônus.
     * *Sugestão:* A IA apresentou a criação de uma tabela dedicada `reservation_audits`.
     * *Decisão:* Rejeitei a tabela dedicada. Realizei uma inspeção nas *migrations* legadas e descobri a `audit_logs` polimórfica. Reaproveitei o serviço existente de log, poupando banco de dados.
+* **Interação 5 - Estratégia de Deploy e Proteção do Legado (RNF-01):**
+    * *Contexto:* Como lidar com restrições do plano gratuito do Render (bloqueio de acesso ao Shell) que impediam a execução do ficheiro de *seeds* na nuvem para popular a base de dados de produção.
+    * *Sugestão:* A IA sugeriu criar uma rota HTTP "falsa" no sistema ou adulterar o script `docker-entrypoint` original para forçar a execução das *seeds* durante a compilação.
+    * *Decisão:* Rejeitei categoricamente ambas as sugestões por violarem o edital e as boas práticas. Criar atalhos na aplicação ou adulterar scripts de inicialização legados violaria o RNF-01 e as instruções originais de execução. Aceitei apenas a sugestão de isolamento do cofre de credenciais e decidi documentar a base de dados vazia como uma limitação arquitetural consciente.
