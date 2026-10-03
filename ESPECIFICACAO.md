@@ -37,24 +37,32 @@ Ao analisar as regras de negócio para iniciar o desenvolvimento, eu levantaria 
 * **Futuro:** Com mais tempo, implementaria paginação nas listas de reservas e criaria restrições de exclusão de intervalo (Exclusion Constraints - GiST) direto no PostgreSQL como camada tripla de segurança.
 
 ## 7. Documentação do Uso de IA
-Utilizei ferramentas de IA atuando estritamente como *pair programming* (validação de sintaxe e arquitetura), mantendo o domínio total das regras de negócio.
-* **Interação 1 - Estratégia de Concorrência e Race Conditions:**
+Utilizei ferramentas de IA (Gemini) atuando estritamente como *pair programming* (validação de sintaxe e discussões arquiteturais), mantendo o domínio total do projeto.
+
+**O que NÃO foi delegado à IA e como o código foi validado:**
+Em conformidade com o edital, as decisões centrais foram estritamente humanas:
+* **Decisões de Negócio e Escopo:** O entendimento das regras de bloqueio de horários (RN-01-02), as permissões entre Morador/Admin e a decisão de não resolver a dívida técnica do legado foram definições minhas.
+* **Segurança:** A decisão de criar um cofre de credenciais no Render (`production.yml.enc`) para blindar o repositório base foi uma exigência minha de infraestrutura.
+* **Critérios de Aceite (Validação):** A aprovação de cada código sugerido ocorreu mediante inspeção humana e execução isolada no ambiente de testes (RSpec). Nenhuma sugestão foi aprovada para *commit* sem que eu pudesse explicar detalhadamente o seu impacto nas tabelas e no RNF-01.
+
+**Interações Relevantes:**
+* **Interação 1 - Estratégia de Concorrência (RF-03):**
     * *Contexto:* Como impedir que 2 administradores aprovassem pedidos colidentes simultaneamente.
-    * *Sugestão:* A IA apresentou abordagens de *Optimistic Locking* (via `lock_version`) ou *Pessimistic Locking* nativo.
-    * *Decisão:* Adotei *Pessimistic Locking* via `with_lock!`. Validei que seria a opção mais limpa por não exigir novas colunas no schema, atuando diretamente em transações do SGBD.
+    * *Sugestão:* A IA apresentou abordagens de *Optimistic Locking* ou *Pessimistic Locking* nativo.
+    * *Decisão:* Aceita. Adotei *Pessimistic Locking* via `with_lock!`. Validei que seria a opção mais limpa por atuar direto no PostgreSQL, sem gerar novas colunas.
 * **Interação 2 - Autorização e Reuso do Legado (RNF-01):**
-    * *Contexto:* Qual melhor abordagem para aplicar os bloqueios de Morador e Admin nas novas rotas sem vazar permissões.
-    * *Sugestão:* Após compartilhar o `application_controller.rb` herdado, a IA confirmou a presença da biblioteca `CanCanCan`.
-    * *Decisão:* Em vez de gerar middlewares autorizadores manuais, configurei o arquivo `ability.rb` existente, garantindo integração cirúrgica ao modelo herdado da equipe original.
+    * *Contexto:* Abordagem para aplicar os bloqueios de Morador e Admin nas novas rotas.
+    * *Sugestão:* A IA confirmou a presença e funcionamento da biblioteca `CanCanCan` no legado.
+    * *Decisão:* Aceita. Configurei o arquivo `ability.rb` existente, integrando cirurgicamente ao modelo herdado da equipe original.
 * **Interação 3 - Estratégia de Linting e Testes Falhos:**
-    * *Contexto:* A pipeline acusou dezenas de quebras no sistema antigo de chamados após meu primeiro envio.
-    * *Sugestão:* A IA sugeriu forçar uma correção global (`rubocop -A` no projeto inteiro) ou adotar um isolamento defensivo.
-    * *Decisão:* Rejeitei a correção global. Optei por rodar o corretor e as execuções apenas no caminho `spec/models/` para isolar meu escopo e não correr o risco de quebrar o legado.
-* **Interação 4 - Registro de Auditoria (Diferencial):**
-    * *Contexto:* Como implementar rastreio nas ações novas (Aprovar, Criar) exigidas como bônus.
-    * *Sugestão:* A IA apresentou a criação de uma tabela dedicada `reservation_audits`.
-    * *Decisão:* Rejeitei a tabela dedicada. Realizei uma inspeção nas *migrations* legadas e descobri a `audit_logs` polimórfica. Reaproveitei o serviço existente de log, poupando banco de dados.
+    * *Contexto:* A pipeline acusou dezenas de quebras no sistema antigo de chamados.
+    * *Sugestão:* A IA sugeriu forçar uma correção global (`rubocop -A` no projeto inteiro).
+    * *Decisão:* **Rejeitada.** Intervim para não quebrar o legado e optei por rodar as correções apenas no caminho `spec/models/`, isolando meu escopo.
+* **Interação 4 - Registro de Auditoria (Bônus):**
+    * *Contexto:* Como implementar rastreio nas ações novas.
+    * *Sugestão:* A IA propôs a criação de uma tabela dedicada `reservation_audits`.
+    * *Decisão:* **Rejeitada.** Realizei uma inspeção nas *migrations* legadas e descobri a `audit_logs` polimórfica. Reaproveitei o serviço existente poupando tabelas.
 * **Interação 5 - Estratégia de Deploy e Proteção do Legado (RNF-01):**
-    * *Contexto:* Como lidar com restrições do plano gratuito do Render (bloqueio de acesso ao Shell) que impediam a execução do ficheiro de *seeds* na nuvem para popular a base de dados de produção.
-    * *Sugestão:* A IA sugeriu criar uma rota HTTP "falsa" no sistema ou adulterar o script `docker-entrypoint` original para forçar a execução das *seeds* durante a compilação.
-    * *Decisão:* Rejeitei categoricamente ambas as sugestões por violarem o edital e as boas práticas. Criar atalhos na aplicação ou adulterar scripts de inicialização legados violaria o RNF-01 e as instruções originais de execução. Aceitei apenas a sugestão de isolamento do cofre de credenciais e decidi documentar a base de dados vazia como uma limitação arquitetural consciente.
+    * *Contexto:* O plano gratuito do Render bloqueou o acesso ao terminal, impedindo popular os usuários iniciais com o `seeds`.
+    * *Sugestão:* A IA sugeriu criar uma rota HTTP "falsa" na API ou adulterar o script `docker-entrypoint` original para forçar a execução das *seeds* na compilação.
+    * *Decisão:* **Rejeitada categoricamente.** Rejeitei as opções por violarem as regras de execução do edital. Assumi a responsabilidade pela base limpa documentando-a como uma limitação de infraestrutura isolada.
