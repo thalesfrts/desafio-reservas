@@ -32,8 +32,8 @@ Ao analisar as regras de negócio para iniciar o desenvolvimento, eu levantaria 
 3. **Horário de Funcionamento:** A regra aceita qualquer horário no futuro. Há necessidade de uma validação atrelada ao horário de silêncio/funcionamento do condomínio para impedir reservas de piscinas às 3h da manhã?
 
 ## 6. Premissas Assumidas e O Que Faria Com Mais Tempo
-* **Premissas:** Assumi que o sistema de permissões atual baseado no CanCanCan (`ability.rb`) é escalável e centralizei as regras do Morador/Admin nele. Também assumi que o diferencial de "Registro de Auditoria" seria melhor cumprido reaproveitando a tabela polimórfica `audit_logs` que já existia para chamados.
-* **Futuro:** Com mais tempo, faria o deploy (PaaS), implementaria paginação nas listas de reservas, e criaria restrições de exclusão de intervalo (Exclusion Constraints - GiST) direto no PostgreSQL como camada tripla de segurança.
+* **Premissas:** Assumi que o sistema de permissões atual baseado no CanCanCan (`ability.rb`) é escalável e centralizei as regras do Morador/Admin nele. Também assumi que o diferencial de "Registro de Auditoria" seria melhor cumprido reaproveitando a tabela polimórfica `audit_logs` que já existia para chamados. Os diferenciais de Auditoria e Deploy em nuvem foram concluídos com sucesso.
+* **Futuro:** Com mais tempo, implementaria paginação nas listas de reservas e criaria restrições de exclusão de intervalo (Exclusion Constraints - GiST) direto no PostgreSQL como camada tripla de segurança.
 
 ## 7. Documentação do Uso de IA
 Utilizei ferramentas de IA atuando estritamente como *pair programming* (validação de sintaxe e arquitetura), mantendo o domínio total das regras de negócio.
