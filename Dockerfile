@@ -44,10 +44,8 @@ RUN bundle exec bootsnap precompile app/ lib/
 
 # Precompile assets in production mode using a BuildKit secret.
 # Build with: docker build --secret id=rails_master_key,src=config/master.key -t <image> .
-RUN --mount=type=secret,id=rails_master_key \
-    export RAILS_MASTER_KEY="$(cat /run/secrets/rails_master_key)" && \
-    SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
-
+ARG RAILS_MASTER_KEY
+RUN SECRET_KEY_BASE_DUMMY=1 RAILS_MASTER_KEY=${RAILS_MASTER_KEY} ./bin/rails assets:precompile
 
 
 
